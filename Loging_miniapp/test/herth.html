@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор ошибок для тестирования</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Главный контейнер -->
+    <div class="bg-white p-8 sm:p-12 rounded-3xl shadow-xl w-full max-w-lg border border-gray-200 text-center transition-all duration-300">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Генератор ошибок</h1>
+        <p class="text-gray-500 mb-8">Нажмите на одну из кнопок, чтобы сгенерировать ошибку и проверить работу системы логирования.</p>
+        
+        <!-- Контейнер для кнопок -->
+        <div class="space-y-4">
+            <button id="throwErrorButton" class="w-full bg-red-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-red-600 transition-colors duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300">
+                Сгенерировать обычную ошибку
+            </button>
+            <button id="throwPromiseErrorButton" class="w-full bg-orange-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-orange-600 transition-colors duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300">
+                Сгенерировать ошибку промиса
+            </button>
+            <button id="throwFetchErrorButton" class="w-full bg-yellow-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:bg-yellow-600 transition-colors duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300">
+                Симулировать ошибку сети
+            </button>
+        </div>
+
+        <div id="statusMessage" class="mt-8 text-sm text-gray-700 font-medium bg-gray-100 p-4 rounded-lg border border-gray-300">
+            Нажмите кнопку, чтобы начать тестирование.
+        </div>
+    </div>
+
+    <script>
+        // Функция для отображения статуса
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `mt-8 text-sm font-medium p-4 rounded-lg border border-gray-300 transition-colors duration-300`;
+            
+            if (type === 'success') {
+                statusDiv.classList.add('bg-green-100', 'text-green-800', 'border-green-300');
+            } else if (type === 'error') {
+                statusDiv.classList.add('bg-red-100', 'text-red-800', 'border-red-300');
+            } else {
+                statusDiv.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-300');
+            }
+        }
+
+        // Обработчики событий для кнопок
+        document.getElementById('throwErrorButton').addEventListener('click', () => {
+            showStatus("Генерирую обычную ошибку...");
+            // Эта ошибка будет перехвачена window.onerror
+            throw new Error("Это тестовая ошибка, сгенерированная пользователем.");
+        });
+
+        document.getElementById('throwPromiseErrorButton').addEventListener('click', () => {
+            showStatus("Генерирую ошибку промиса...");
+            // Эта ошибка будет перехвачена window.addEventListener('unhandledrejection')
+            Promise.reject(new Error("Это тестовая ошибка промиса."));
+        });
+
+        document.getElementById('throwFetchErrorButton').addEventListener('click', () => {
+            showStatus("Симулирую ошибку сети...");
+            // Это вызовет ошибку, которую поймает unhandledrejection
+            fetch('http://invalid-url-to-test-error.com')
+                .then(response => {
+                    if (!response.ok) {
+                        return Promise.reject(new Error(`Fetch failed with status: ${response.status}`));
+                    }
+                    return response.json();
+                });
+        });
+
+        // Заменяем стандартные console.log для демонстрации
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(message) {
+            originalLog(message);
+            if (message.includes("Лог успешно отправлен!")) {
+                showStatus("Лог успешно отправлен!", 'success');
+            }
+        };
+
+        console.error = function(message) {
+            originalError(message);
+            if (message.includes("Ошибка отправки лога")) {
+                showStatus(message, 'error');
+            }
+        };
+    </script>
+    <script src="Loging_Miniapp.js"></script>
+</body>
+</html>
